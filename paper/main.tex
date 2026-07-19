@@ -6,6 +6,7 @@
 \usepackage{array}
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage[font=small,labelfont=bf]{caption}
 \usepackage{hyperref}
 
 \title{Collapse-Aware Self-Update for Resource-Limited Medical Language Models}
@@ -86,6 +87,13 @@ We report accuracy and macro-F1 alongside these collapse metrics. Macro-F1 is im
 
 Because frozen and updated models are evaluated on the same test items, we use paired McNemar tests \cite{mcnemar1947note}. For each frozen-versus-updated pair, we count items that change from correct to incorrect and from incorrect to correct, then compute the exact binomial McNemar $p$-value over discordant cases.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/figure1_pipeline.pdf}
+\caption{Experimental workflow. Public medical QA datasets are converted into a full45k replay mixture, evaluated in frozen form, adapted with LoRA self-update, and passed through a collapse-aware benchmarker that reports performance, prediction-distribution, and paired-test statistics.}
+\label{fig:pipeline}
+\end{figure}
+
 \section{Results}
 
 \subsection{Accuracy Alone Overstates Label-Biased Behavior}
@@ -95,21 +103,15 @@ Table~\ref{tab:label_baselines} shows that simple label baselines can obtain non
 \begin{table}[t]
 \centering
 \small
-\caption{Non-model label baselines. Majority baselines achieve non-trivial accuracy but collapse by construction.}
+\caption{Non-model label baselines. Majority baselines are collapsed by construction, even when their accuracy is non-trivial.}
 \label{tab:label_baselines}
-\begin{tabular}{lllll}
+\begin{tabular}{llllll}
 \toprule
-Task & Baseline & Accuracy & Macro-F1 & Collapse \\
+Task & Majority label & Majority Acc. & Macro-F1 & Uniform Acc. & Prior Acc. \\
 \midrule
-PubMedQA test100 & Majority yes & 0.560 & 0.239 & Yes \\
-PubMedQA test100 & Uniform random & 0.333 exp. & -- & -- \\
-PubMedQA test100 & Label-prior random & 0.439 exp. & -- & -- \\
-MedMCQA val1000 & Majority A & 0.323 & 0.122 & Yes \\
-MedMCQA val1000 & Uniform random & 0.250 exp. & -- & -- \\
-MedMCQA val1000 & Label-prior random & 0.260 exp. & -- & -- \\
-MedQA test1273 & Majority A & 0.277 & 0.109 & Yes \\
-MedQA test1273 & Uniform random & 0.250 exp. & -- & -- \\
-MedQA test1273 & Label-prior random & 0.253 exp. & -- & -- \\
+PubMedQA & yes & 0.560 & 0.239 & 0.333 & 0.439 \\
+MedMCQA & A & 0.323 & 0.122 & 0.250 & 0.260 \\
+MedQA & A & 0.277 & 0.109 & 0.250 & 0.253 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -122,27 +124,35 @@ The 1.5B model is stronger in frozen form on MedMCQA and MedQA, but still collap
 
 The 3B model achieves the best MedMCQA and MedQA results, and its three-seed variance is very small: 0.583 $\pm$ 0.003 accuracy on MedMCQA and 0.566 $\pm$ 0.002 on MedQA. However, its frozen PubMedQA behavior still collapses to a maybe-dominant distribution. After self-update, PubMedQA collapse is removed, and accuracy reaches 0.643 $\pm$ 0.031.
 
-\begin{table*}[t]
+\begin{table}[t]
 \centering
-\small
+\scriptsize
+\setlength{\tabcolsep}{3.4pt}
 \caption{Main frozen-versus-full45k benchmark results. Full45k values are mean $\pm$ standard deviation over three seeds.}
 \label{tab:main_results}
-\begin{tabularx}{\textwidth}{llccccc}
+\begin{tabular}{llccccc}
 \toprule
-Task & Model & Frozen Acc. & Full45k Acc. & $\Delta$ Acc. & Full45k Macro-F1 & Collapse \\
+Task & Model & Frozen Acc. & Full45k Acc. & $\Delta$ Acc. & Full45k F1 & Collapse \\
 \midrule
-PubMedQA & Qwen2.5-0.5B & 0.210 & 0.650 $\pm$ 0.046 & +0.440 & 0.498 $\pm$ 0.063 & 1/1 $\rightarrow$ 0/3 \\
-PubMedQA & Qwen2.5-1.5B & 0.620 & 0.690 $\pm$ 0.010 & +0.070 & 0.584 $\pm$ 0.040 & 1/1 $\rightarrow$ 0/3 \\
-PubMedQA & Qwen2.5-3B & 0.230 & 0.643 $\pm$ 0.031 & +0.413 & 0.571 $\pm$ 0.045 & 1/1 $\rightarrow$ 0/3 \\
-MedMCQA & Qwen2.5-0.5B & 0.317 & 0.414 $\pm$ 0.029 & +0.097 & 0.397 $\pm$ 0.030 & 1/1 $\rightarrow$ 0/3 \\
-MedMCQA & Qwen2.5-1.5B & 0.436 & 0.539 $\pm$ 0.012 & +0.103 & 0.528 $\pm$ 0.011 & 0/1 $\rightarrow$ 0/3 \\
-MedMCQA & Qwen2.5-3B & 0.490 & 0.583 $\pm$ 0.003 & +0.093 & 0.576 $\pm$ 0.001 & 0/1 $\rightarrow$ 0/3 \\
-MedQA & Qwen2.5-0.5B & 0.288 & 0.389 $\pm$ 0.023 & +0.101 & 0.381 $\pm$ 0.024 & 1/1 $\rightarrow$ 0/3 \\
-MedQA & Qwen2.5-1.5B & 0.470 & 0.535 $\pm$ 0.010 & +0.065 & 0.531 $\pm$ 0.010 & 0/1 $\rightarrow$ 0/3 \\
-MedQA & Qwen2.5-3B & 0.496 & 0.566 $\pm$ 0.002 & +0.069 & 0.562 $\pm$ 0.002 & 0/1 $\rightarrow$ 0/3 \\
+PubMedQA & 0.5B & 0.210 & 0.650 $\pm$ 0.046 & +0.440 & 0.498 $\pm$ 0.063 & 1/1 $\rightarrow$ 0/3 \\
+PubMedQA & 1.5B & 0.620 & 0.690 $\pm$ 0.010 & +0.070 & 0.584 $\pm$ 0.040 & 1/1 $\rightarrow$ 0/3 \\
+PubMedQA & 3B & 0.230 & 0.643 $\pm$ 0.031 & +0.413 & 0.571 $\pm$ 0.045 & 1/1 $\rightarrow$ 0/3 \\
+MedMCQA & 0.5B & 0.317 & 0.414 $\pm$ 0.029 & +0.097 & 0.397 $\pm$ 0.030 & 1/1 $\rightarrow$ 0/3 \\
+MedMCQA & 1.5B & 0.436 & 0.539 $\pm$ 0.012 & +0.103 & 0.528 $\pm$ 0.011 & 0/1 $\rightarrow$ 0/3 \\
+MedMCQA & 3B & 0.490 & 0.583 $\pm$ 0.003 & +0.093 & 0.576 $\pm$ 0.001 & 0/1 $\rightarrow$ 0/3 \\
+MedQA & 0.5B & 0.288 & 0.389 $\pm$ 0.023 & +0.101 & 0.381 $\pm$ 0.024 & 1/1 $\rightarrow$ 0/3 \\
+MedQA & 1.5B & 0.470 & 0.535 $\pm$ 0.010 & +0.065 & 0.531 $\pm$ 0.010 & 0/1 $\rightarrow$ 0/3 \\
+MedQA & 3B & 0.496 & 0.566 $\pm$ 0.002 & +0.069 & 0.562 $\pm$ 0.002 & 0/1 $\rightarrow$ 0/3 \\
 \bottomrule
-\end{tabularx}
-\end{table*}
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/figure2_results.pdf}
+\caption{Paired accuracy changes from frozen evaluation to full45k self-update. Each row compares the same model scale and task before and after LoRA adaptation. Red rings mark collapsed frozen runs; all updated conditions remove collapse across three seeds.}
+\label{fig:main_results_plot}
+\end{figure}
 
 \subsection{Paired Tests Support Most Accuracy Gains}
 
@@ -177,6 +187,13 @@ The scale comparison is task-dependent. On MedMCQA and MedQA, 3B full45k is stro
 \section{Discussion}
 
 The central finding is not simply that full45k improves accuracy. Rather, task-driven self-update changes how small medical language models use the answer space. Frozen small models can behave like biased label predictors: they overuse a dominant label and produce low-entropy outputs. LoRA self-update reduces this behavior, improving macro-F1 and entropy while removing collapse flags.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/figure3_mechanism.pdf}
+\caption{Mechanism hypothesis. Frozen small medical language models can overuse a dominant answer label because of label-prior or format bias. Task-driven LoRA self-update exposes the model to multi-task QA evidence and recalibrates answer-space usage, reducing dominant-label behavior without claiming autonomous self-improvement.}
+\label{fig:mechanism}
+\end{figure}
 
 This is particularly important for medical QA evaluation. Accuracy can reward a frequent-label heuristic, especially in small or imbalanced test sets. Collapse-aware reporting makes this visible. For PubMedQA, majority yes already reaches 0.560 accuracy; therefore, a model must be evaluated by how well it handles no and maybe labels, not just by aggregate correctness. For MedMCQA and MedQA, macro-F1 and collapse flags reveal whether the model genuinely covers A/B/C/D choices.
 
@@ -224,25 +241,5 @@ The authors used AI-assisted language and coding tools during manuscript draftin
 \section{Reproducibility Details}
 
 All full45k self-update runs used one epoch, learning rate $2\times10^{-4}$, LoRA rank 8, alpha 16, dropout 0.05, and seeds 42, 43, and 44. The 0.5B and 1.5B runs used 5,623 optimizer steps; the 3B runs used 2,812 optimizer steps. The benchmarker outputs accuracy, macro-F1, dominant-label rate, normalized entropy, collapse flags, prediction counts, label baselines, grouped aggregates, and paired McNemar tests.
-
-\section{Figure Plans}
-
-Figure~\ref{fig:pipeline} should show the experimental pipeline: medical QA data, full45k replay construction, frozen baseline evaluation, LoRA self-update, benchmarker, collapse statistics, paired tests, and paper tables.
-
-\begin{figure}[h]
-\centering
-\fbox{\parbox{0.92\linewidth}{\centering Placeholder for experimental pipeline diagram.}}
-\caption{Experimental pipeline for collapse-aware medical self-update evaluation.}
-\label{fig:pipeline}
-\end{figure}
-
-Figure~\ref{fig:mechanism} should show the mechanism hypothesis: frozen small models exhibit label-prior or format bias; LoRA self-update exposes the model to multi-task medical QA evidence; updated models distribute predictions more evenly, increasing entropy and macro-F1 while reducing dominant-label collapse.
-
-\begin{figure}[h]
-\centering
-\fbox{\parbox{0.92\linewidth}{\centering Placeholder for collapse mitigation mechanism diagram.}}
-\caption{Mechanism view of task-driven self-update as answer-space recalibration.}
-\label{fig:mechanism}
-\end{figure}
 
 \end{document}
