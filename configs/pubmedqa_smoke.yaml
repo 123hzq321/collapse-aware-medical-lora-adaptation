@@ -1,0 +1,13 @@
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+dataset_name: qiaojin/PubMedQA
+dataset_config: pqa_labeled
+max_eval_samples: 200
+batch_size: 1
+max_new_tokens: 8
+temperature: 0.0
+self_update:
+  rounds: 3
+  min_confidence: 0.60
+  prompt_consistency: true
+  lora_rank: 8
+  lora_alpha: 16

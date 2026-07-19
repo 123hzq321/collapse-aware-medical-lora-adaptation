@@ -1,0 +1,11 @@
+| Task | Baseline | Condition | Accuracy | Macro-F1 | Collapse |
+|---|---|---|---|---|---|
+| PubMedQA test100 | gold_majority | always_yes | 0.5600 | 0.2393 | True |
+| PubMedQA test100 | uniform_random | expected | 0.3333 expected |  |  |
+| PubMedQA test100 | label_prior_random | expected | 0.4392 expected |  |  |
+| MedMCQA val1000 | gold_majority | always_A | 0.3230 | 0.1221 | True |
+| MedMCQA val1000 | uniform_random | expected | 0.2500 expected |  |  |
+| MedMCQA val1000 | label_prior_random | expected | 0.2601 expected |  |  |
+| MedQA test1273 | gold_majority | always_A | 0.2773 | 0.1085 | True |
+| MedQA test1273 | uniform_random | expected | 0.2500 expected |  |  |
+| MedQA test1273 | label_prior_random | expected | 0.2530 expected |  |  |

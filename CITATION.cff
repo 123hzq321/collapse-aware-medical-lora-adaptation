@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: "Collapse-Aware Self-Update for Resource-Limited Medical Language Models"
+message: "If you use this repository, please cite the associated manuscript."
+type: software
+authors:
+  - family-names: Hu
+    given-names: Zhequan
+  - family-names: Bi
+    given-names: Xingang
+repository-code: "https://github.com/123hzq321/collapse-aware-medical-self-update"
+year: 2026

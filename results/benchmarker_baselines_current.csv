@@ -1,0 +1,10 @@
+task,task_name,family,model,condition,seed,n,accuracy,macro_f1,dominant_label,dominant_rate,entropy,collapse_flag,gold_counts,pred_counts,expected_accuracy,source_file
+pubmedqa,PubMedQA test100,label_baseline,gold_majority,always_yes,,100,0.56,0.23931623931623933,yes,1.0,0.0,True,"{""maybe"": 10, ""no"": 34, ""yes"": 56}","{""yes"": 100}",,runs/pubmedqa_qwen05b_base_test100.jsonl
+pubmedqa,PubMedQA test100,label_baseline,uniform_random,expected,,100,,,,,,,"{""maybe"": 10, ""no"": 34, ""yes"": 56}",,0.3333333333333333,runs/pubmedqa_qwen05b_base_test100.jsonl
+pubmedqa,PubMedQA test100,label_baseline,label_prior_random,expected,,100,,,,,,,"{""maybe"": 10, ""no"": 34, ""yes"": 56}",,0.4392000000000001,runs/pubmedqa_qwen05b_base_test100.jsonl
+medmcqa,MedMCQA val1000,label_baseline,gold_majority,always_A,,1000,0.323,0.12207105064247921,A,1.0,0.0,True,"{""A"": 323, ""B"": 267, ""C"": 219, ""D"": 191}","{""A"": 1000}",,runs/qwen05b_base_medmcqa_val1000.jsonl
+medmcqa,MedMCQA val1000,label_baseline,uniform_random,expected,,1000,,,,,,,"{""A"": 323, ""B"": 267, ""C"": 219, ""D"": 191}",,0.25,runs/qwen05b_base_medmcqa_val1000.jsonl
+medmcqa,MedMCQA val1000,label_baseline,label_prior_random,expected,,1000,,,,,,,"{""A"": 323, ""B"": 267, ""C"": 219, ""D"": 191}",,0.26006,runs/qwen05b_base_medmcqa_val1000.jsonl
+medqa,MedQA test1273,label_baseline,gold_majority,always_A,,1273,0.27729772191673213,0.10854858548585486,A,1.0,0.0,True,"{""A"": 353, ""B"": 309, ""C"": 346, ""D"": 265}","{""A"": 1273}",,runs/qwen05b_base_medqa_test1273.jsonl
+medqa,MedQA test1273,label_baseline,uniform_random,expected,,1273,,,,,,,"{""A"": 353, ""B"": 309, ""C"": 346, ""D"": 265}",,0.25,runs/qwen05b_base_medqa_test1273.jsonl
+medqa,MedQA test1273,label_baseline,label_prior_random,expected,,1273,,,,,,,"{""A"": 353, ""B"": 309, ""C"": 346, ""D"": 265}",,0.25302293263496056,runs/qwen05b_base_medqa_test1273.jsonl
