@@ -6,6 +6,12 @@ This repository contains code, aggregate results, and manuscript source files fo
 
 The study evaluates whether lightweight LoRA adaptation can reduce answer collapse in small medical language models under limited compute.
 
+## Public Release
+
+A complete source package, including scripts, manuscript source, result tables, raw predictions, per-class diagnostics, confusion matrices, prediction counts, split audit, and paired-test p-values, is attached to the public `v0.1` release:
+
+https://github.com/123hzq321/collapse-aware-medical-lora-adaptation/releases/tag/v0.1
+
 ## Summary
 
 Small language models can obtain non-trivial medical QA accuracy while overusing one answer label. We study this failure mode as **answer collapse** and evaluate Qwen2.5-Instruct models at 0.5B, 1.5B, and 3B parameters on PubMedQA, MedMCQA, and MedQA.
