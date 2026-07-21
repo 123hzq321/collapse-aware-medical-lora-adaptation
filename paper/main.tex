@@ -8,8 +8,10 @@
 \usepackage{graphicx}
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage{hyperref}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\scriptsize,breaklines=true,columns=fullflexible}
 
-\title{Collapse-Aware Self-Update for Resource-Limited Medical Language Models}
+\title{Collapse-Aware LoRA Adaptation for Resource-Limited Medical Language Models}
 
 \author{
 Zhequan Hu\textsuperscript{1} and Xingang Bi\textsuperscript{1,*}\\
@@ -24,9 +26,9 @@ Chinese Academy of Medical Sciences and Peking Union Medical College, Beijing, C
 \maketitle
 
 \begin{abstract}
-Small language models are attractive for medical question answering (QA) under limited compute, but their apparent accuracy can hide a more basic failure mode: answer collapse, where a model repeatedly predicts a dominant label while underusing the answer space. This paper studies task-driven self-update as a lightweight way to recalibrate such behavior. We define self-update operationally as supervised LoRA adaptation on a 44,978-example multi-task medical QA replay mixture built from PubMedQA, MedMCQA, and MedQA, and evaluate Qwen2.5-Instruct models at 0.5B, 1.5B, and 3B parameters across three random seeds. Rather than reporting accuracy alone, we introduce a collapse-aware benchmarker that jointly tracks accuracy, macro-F1, dominant-label rate, normalized prediction entropy, collapse flags, non-model label baselines, frozen-model baselines, and paired McNemar tests.
+Small language models are attractive for medical question answering (QA) under limited compute, but their apparent accuracy can hide a more basic failure mode: answer collapse, where a model repeatedly predicts a dominant label while underusing the answer space. This paper studies collapse-aware LoRA adaptation as a lightweight way to recalibrate such behavior. We define the adaptation setting operationally as supervised LoRA training on a 44,978-example multi-task medical QA replay mixture built from PubMedQA, MedMCQA, and MedQA, and evaluate Qwen2.5-Instruct models at 0.5B, 1.5B, and 3B parameters across three random seeds. Rather than reporting accuracy alone, we introduce a collapse-aware benchmarker that jointly tracks accuracy, macro-F1, per-class recall/F1, confusion matrices, prediction counts, dominant-label rate, normalized prediction entropy, collapse flags, non-model label baselines, frozen-model baselines, and paired McNemar tests.
 
-Across all model scales and tasks, full45k self-update removes collapse in every seed. On PubMedQA, the 0.5B model improves from 0.210 frozen accuracy to 0.650 $\pm$ 0.046 after self-update, while collapse decreases from 1/1 to 0/3 runs. The 1.5B model obtains the best PubMedQA result, reaching 0.690 $\pm$ 0.010 accuracy and 0.584 $\pm$ 0.040 macro-F1. On MedMCQA and MedQA, the 3B model is strongest and highly stable, reaching 0.583 $\pm$ 0.003 and 0.566 $\pm$ 0.002 accuracy, respectively. Paired tests show significant gains for the 0.5B and 3B models across all three tasks and seeds, and for the 1.5B model on MedMCQA and MedQA. These findings suggest that lightweight weight updates can mitigate answer collapse and recalibrate prediction distributions, while also showing that scaling alone does not guarantee stable medical QA behavior.
+Across all model scales and tasks, full45k LoRA adaptation removes collapse in every seed. On PubMedQA, the 0.5B model improves from 0.210 frozen accuracy to 0.650 $\pm$ 0.046 after adaptation, while collapse decreases from 1/1 to 0/3 runs and normalized entropy rises from 0.415 to 0.766. The 1.5B model obtains the best PubMedQA result, reaching 0.690 $\pm$ 0.010 accuracy and 0.584 $\pm$ 0.040 macro-F1. On MedMCQA and MedQA, the 3B model is strongest and highly stable, reaching 0.583 $\pm$ 0.003 and 0.566 $\pm$ 0.002 accuracy, respectively. Paired tests show significant gains for the 0.5B and 3B models across all three tasks and seeds, and for the 1.5B model on MedMCQA and MedQA. These findings suggest that lightweight LoRA adaptation can mitigate answer collapse and recalibrate prediction distributions, while also showing that scaling alone does not guarantee stable medical QA behavior.
 \end{abstract}
 
 \section{Introduction}
@@ -35,15 +37,15 @@ Medical question answering is a demanding setting for language models: tasks dif
 
 We focus on this failure mode as \emph{answer collapse}: a prediction distribution becomes dominated by one label, or leaves much of the answer space unused. In PubMedQA, this can appear as always answering ``yes'' or ``maybe''; in multiple-choice medical QA, it can appear as repeatedly selecting a single option such as A. Collapse is not merely a cosmetic distributional artifact. It depresses macro-F1, reduces answer-space coverage, and can make an apparently reasonable accuracy number brittle.
 
-This paper asks whether lightweight weight updates can mitigate answer collapse in resource-limited medical language models. We call this setting \emph{task-driven self-update}: the model is updated through LoRA adapters using a multi-task medical QA replay mixture, and the resulting behavior is compared against the same model in its frozen state. The term self-update is used operationally rather than anthropomorphically: the model does not autonomously design its own training objective, but its downstream behavior changes through a small trainable weight component exposed to task evidence.
+This paper asks whether lightweight LoRA adaptation can mitigate answer collapse in resource-limited medical language models. We call this setting \emph{collapse-aware LoRA adaptation}: the model is adapted through LoRA adapters using a multi-task medical QA replay mixture, and the resulting behavior is compared against the same model in its frozen state. This is a supervised parameter-efficient adaptation study, not a claim that the model autonomously designs its own training objective.
 
 Our study uses Qwen2.5-Instruct models at 0.5B, 1.5B, and 3B parameters. We train LoRA adapters on a 44,978-example replay mixture built from PubMedQA, MedMCQA, and MedQA, then evaluate frozen and updated models on PubMedQA test100, MedMCQA val1000, and MedQA test1273. Each full45k condition is run with three seeds. We supplement accuracy with macro-F1, dominant-label rate, normalized entropy, collapse flags, non-model baselines, and paired McNemar tests.
 
 The contributions are:
 \begin{enumerate}
-    \item We formulate a collapse-aware evaluation protocol for medical QA self-update, combining standard accuracy with macro-F1, dominant-label rate, normalized entropy, and explicit collapse flags.
-    \item We provide a three-task, three-scale, three-seed study of LoRA-based self-update under limited compute.
-    \item We show that full45k task-driven self-update removes collapse across all tested model scales and tasks.
+    \item We formulate a collapse-aware evaluation protocol for medical QA adaptation, combining standard accuracy with macro-F1, per-class diagnostics, dominant-label rate, normalized entropy, and explicit collapse flags.
+    \item We provide a three-task, three-scale, three-seed study of LoRA adaptation under limited compute.
+    \item We show that full45k task-driven LoRA adaptation removes collapse across all tested model scales and tasks.
     \item We find that scaling alone is insufficient: frozen 1.5B and 3B models still collapse on PubMedQA, and the strongest PubMedQA result comes from 1.5B rather than 3B.
 \end{enumerate}
 
@@ -56,21 +58,33 @@ PubMedQA evaluates yes/no/maybe answers to biomedical research questions derived
 LoRA freezes the base model and injects trainable low-rank matrices into model layers, substantially reducing adaptation cost relative to full fine-tuning \cite{hu2021lora}. This is particularly attractive when experiments must run on consumer-grade GPUs. We use LoRA not as a new optimization method, but as a controlled mechanism for measuring how a lightweight weight update changes collapse behavior.
 
 \paragraph{Open-weight small language models.}
-Qwen2.5 provides a family of open-weight instruction-tuned models across multiple scales \cite{qwen2025qwen25}. This lets us evaluate whether answer collapse is simply solved by increasing model size. Our results suggest that size helps for MedMCQA and MedQA but does not monotonically improve PubMedQA after self-update.
+Qwen2.5 provides a family of open-weight instruction-tuned models across multiple scales \cite{qwen2025qwen25}. This lets us evaluate whether answer collapse is simply solved by increasing model size. Our results suggest that size helps for MedMCQA and MedQA but does not monotonically improve PubMedQA after LoRA adaptation.
 
 \section{Methods}
 
-\subsection{Task-Driven Self-Update}
+\subsection{Collapse-Aware LoRA Adaptation}
 
-We define task-driven self-update as follows. Given a pretrained instruction-tuned language model $M_\theta$, we freeze the base parameters $\theta$ and train LoRA parameters $\phi$ on a medical QA replay mixture. The updated model is $M_{\theta,\phi}$, where only $\phi$ is learned. The goal is not to claim autonomous model improvement, but to test whether a lightweight weight change can recalibrate answer-space behavior.
+We define collapse-aware LoRA adaptation as follows. Given a pretrained instruction-tuned language model $M_\theta$, we freeze the base parameters $\theta$ and train LoRA parameters $\phi$ on a medical QA replay mixture. The adapted model is $M_{\theta,\phi}$, where only $\phi$ is learned. The goal is to test whether a lightweight supervised weight change can recalibrate answer-space behavior.
 
-The replay mixture, denoted full45k, contains 44,978 training examples. It combines PubMedQA with repeated sampling, 30k MedMCQA examples, and 10k MedQA examples. We use this mixture to expose the model to both yes/no/maybe and four-option medical QA formats. Evaluation is performed separately on PubMedQA test100, MedMCQA val1000, and MedQA test1273.
+The replay mixture, denoted full45k, contains 44,978 training examples. It combines PubMedQA train800 repeated six times, 30,000 MedMCQA training examples, and 10,178 MedQA training examples. We use this mixture to expose the model to both yes/no/maybe and four-option medical QA formats. Evaluation is performed separately on PubMedQA test100, MedMCQA val1000, and MedQA test1273.
+
+\subsection{Data Splits and Leakage Checks}
+
+PubMedQA is split into train800/dev100/test100. MedMCQA uses a seed-42 train subset of 30,000 examples and a held-out validation subset of 1,000 examples. MedQA uses the public train/test files with 10,178 training and 1,273 test examples. Evaluation labels are never used in the training mixture.
+
+We audited exact dataset identifiers and normalized exact question strings between training sources and evaluation files. Exact ID overlap and exact-question overlap are 0 for PubMedQA train versus test, MedMCQA train30k versus val1000, MedQA train versus test, and the full45k mixture versus each evaluation file. The full45k mixture contains 4,000 duplicate PubMedQA question entries by design because train800 is replayed six times; this replay does not overlap PubMedQA test100. MedMCQA and MedQA train files contain 1 and 2 duplicate normalized training questions, respectively, but no exact overlap with the held-out evaluation files.
 
 \subsection{Models and Training}
 
 We evaluate Qwen2.5-Instruct models with 0.5B, 1.5B, and 3B parameters. For each model, we first run frozen evaluation. We then train LoRA adapters for one epoch on the full45k replay mixture using seeds 42, 43, and 44. LoRA rank is 8, alpha is 16, dropout is 0.05, and the learning rate is $2\times 10^{-4}$. LoRA is applied to attention projection modules and feed-forward projection modules: \texttt{q\_proj}, \texttt{k\_proj}, \texttt{v\_proj}, \texttt{o\_proj}, \texttt{gate\_proj}, \texttt{up\_proj}, and \texttt{down\_proj}.
 
 The 0.5B model uses maximum sequence length 1536 and has 4.40M trainable LoRA parameters. The 1.5B model uses maximum sequence length 1024 and has 9.23M trainable parameters. The 3B model uses maximum sequence length 768 and has 14.97M trainable parameters. Gradient checkpointing is enabled for 1.5B and 3B runs. All experiments were run on a single NVIDIA GeForce RTX 5060 Ti with 16GB VRAM.
+
+\subsection{Prompting, Generation, and Parsing}
+
+Generation is deterministic: \texttt{max\_new\_tokens} is 8, \texttt{do\_sample} is false, and \texttt{pad\_token\_id} is set to the tokenizer EOS token. No temperature or nucleus sampling is used. Prompts are rendered through the model's chat template when available. PubMedQA uses the system message ``You are a biomedical QA classifier. Return only yes, no, or maybe.'' MedMCQA and MedQA use ``You are a medical multiple-choice QA classifier. Return only A, B, C, or D.'' Exact user prompt templates are provided in Appendix~\ref{app:prompts} and in \path{src/medself/prompts.py}.
+
+Answer parsing is deliberately strict. PubMedQA outputs are stripped, lowercased, and accepted only when they start with \texttt{yes}, \texttt{no}, or \texttt{maybe}. Multiple-choice outputs are stripped, uppercased, and accepted only when they start with \texttt{A}, \texttt{B}, \texttt{C}, or \texttt{D}. Invalid outputs are recorded as \texttt{parse\_failure}, excluded from accuracy and macro-F1 denominators, and retained in prediction-count and confusion-matrix artifacts. The main full45k matrix produced no parse failures.
 
 \subsection{Collapse-Aware Benchmarker}
 
@@ -81,7 +95,7 @@ H_{\mathrm{norm}} &= -\frac{\sum_{y\in\mathcal{Y}} p(y)\log p(y)}{\log |\mathcal
 \end{align}
 Here $d$ is the dominant-label rate and $H_{\mathrm{norm}}$ is normalized prediction entropy. A run is flagged as collapsed if $d \geq 0.80$ or if the number of missing predicted labels is at least $\max(1,\lfloor |\mathcal{Y}|/2 \rfloor)$.
 
-We report accuracy and macro-F1 alongside these collapse metrics. Macro-F1 is important because a collapsed classifier can obtain moderate accuracy on imbalanced labels while performing poorly on minority classes. We also report non-model label baselines: majority label, uniform random expected accuracy, and label-prior random expected accuracy.
+We report accuracy and macro-F1 alongside these collapse metrics. Macro-F1 is important because a collapsed classifier can obtain moderate accuracy on imbalanced labels while performing poorly on minority classes. The benchmarker additionally exports per-class precision, recall, F1, support, prediction counts, and confusion matrices for every task, model scale, condition, and seed. We also report non-model label baselines: majority label, uniform random expected accuracy, and label-prior random expected accuracy.
 
 \subsection{Paired Significance Testing}
 
@@ -90,7 +104,7 @@ Because frozen and updated models are evaluated on the same test items, we use p
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/figure1_pipeline.pdf}
-\caption{Experimental workflow. Public medical QA datasets are converted into a full45k replay mixture, evaluated in frozen form, adapted with LoRA self-update, and passed through a collapse-aware benchmarker that reports performance, prediction-distribution, and paired-test statistics.}
+\caption{Experimental workflow. Public medical QA datasets are converted into a full45k replay mixture, evaluated in frozen form, adapted with LoRA, and passed through a collapse-aware benchmarker that reports performance, prediction-distribution, per-class, and paired-test statistics.}
 \label{fig:pipeline}
 \end{figure}
 
@@ -116,13 +130,13 @@ MedQA & A & 0.277 & 0.109 & 0.250 & 0.253 \\
 \end{tabular}
 \end{table}
 
-\subsection{Self-Update Removes Collapse Across Scales}
+\subsection{LoRA Adaptation Removes Collapse Across Scales}
 
-Table~\ref{tab:main_results} summarizes frozen and full45k results. The 0.5B frozen model collapses on all three tasks. After self-update, collapse decreases from 1/1 to 0/3 runs on each task. PubMedQA accuracy rises from 0.210 to 0.650 $\pm$ 0.046, MedMCQA from 0.317 to 0.414 $\pm$ 0.029, and MedQA from 0.288 to 0.389 $\pm$ 0.023.
+Table~\ref{tab:main_results} summarizes frozen and full45k results. The 0.5B frozen model collapses on all three tasks. After LoRA adaptation, collapse decreases from 1/1 to 0/3 runs on each task. PubMedQA accuracy rises from 0.210 to 0.650 $\pm$ 0.046, MedMCQA from 0.317 to 0.414 $\pm$ 0.029, and MedQA from 0.288 to 0.389 $\pm$ 0.023.
 
-The 1.5B model is stronger in frozen form on MedMCQA and MedQA, but still collapses on PubMedQA, with dominant-label rate 0.850. After self-update, PubMedQA collapse is removed in all three seeds, with accuracy 0.690 $\pm$ 0.010 and macro-F1 0.584 $\pm$ 0.040. MedMCQA and MedQA also improve to 0.539 $\pm$ 0.012 and 0.535 $\pm$ 0.010 accuracy.
+The 1.5B model is stronger in frozen form on MedMCQA and MedQA, but still collapses on PubMedQA, with dominant-label rate 0.850. After adaptation, PubMedQA collapse is removed in all three seeds, with accuracy 0.690 $\pm$ 0.010 and macro-F1 0.584 $\pm$ 0.040. MedMCQA and MedQA also improve to 0.539 $\pm$ 0.012 and 0.535 $\pm$ 0.010 accuracy.
 
-The 3B model achieves the best MedMCQA and MedQA results, and its three-seed variance is very small: 0.583 $\pm$ 0.003 accuracy on MedMCQA and 0.566 $\pm$ 0.002 on MedQA. However, its frozen PubMedQA behavior still collapses to a maybe-dominant distribution. After self-update, PubMedQA collapse is removed, and accuracy reaches 0.643 $\pm$ 0.031.
+The 3B model achieves the best MedMCQA and MedQA results, and its three-seed variance is very small: 0.583 $\pm$ 0.003 accuracy on MedMCQA and 0.566 $\pm$ 0.002 on MedQA. However, its frozen PubMedQA behavior still collapses to a maybe-dominant distribution. After adaptation, PubMedQA collapse is removed, and accuracy reaches 0.643 $\pm$ 0.031.
 
 \begin{table}[t]
 \centering
@@ -147,10 +161,35 @@ MedQA & 3B & 0.496 & 0.566 $\pm$ 0.002 & +0.069 & 0.562 $\pm$ 0.002 & 0/1 $\righ
 \end{tabular}
 \end{table}
 
+Table~\ref{tab:distribution} reports the distributional diagnostics behind the collapse flags. For the 0.5B model, adaptation reduces dominant-label rate from 0.830 to 0.637 on PubMedQA, from 0.884 to 0.392 on MedMCQA, and from 0.833 to 0.323 on MedQA. Normalized entropy rises from 0.415 to 0.766, 0.270 to 0.945, and 0.356 to 0.980, respectively. The 1.5B and 3B multiple-choice models are already high-entropy in frozen form, but still gain accuracy; in contrast, both remain collapsed on frozen PubMedQA and are recalibrated by LoRA adaptation.
+
+\begin{table}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4.1pt}
+\caption{Prediction-distribution diagnostics. $D$ is dominant-label rate and $H$ is normalized prediction entropy. Full45k values are means over three seeds.}
+\label{tab:distribution}
+\begin{tabular}{llcccc}
+\toprule
+Task & Model & Frozen $D$ & Full45k $D$ & Frozen $H$ & Full45k $H$ \\
+\midrule
+PubMedQA & 0.5B & 0.830 & 0.637 & 0.415 & 0.766 \\
+PubMedQA & 1.5B & 0.850 & 0.543 & 0.472 & 0.897 \\
+PubMedQA & 3B & 0.810 & 0.483 & 0.556 & 0.947 \\
+MedMCQA & 0.5B & 0.884 & 0.392 & 0.270 & 0.945 \\
+MedMCQA & 1.5B & 0.306 & 0.370 & 0.984 & 0.968 \\
+MedMCQA & 3B & 0.291 & 0.351 & 0.984 & 0.972 \\
+MedQA & 0.5B & 0.833 & 0.323 & 0.356 & 0.980 \\
+MedQA & 1.5B & 0.311 & 0.278 & 0.992 & 0.993 \\
+MedQA & 3B & 0.274 & 0.280 & 0.998 & 0.995 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/figure2_results.pdf}
-\caption{Paired accuracy changes from frozen evaluation to full45k self-update. Each row compares the same model scale and task before and after LoRA adaptation. Red rings mark collapsed frozen runs; all updated conditions remove collapse across three seeds.}
+\caption{Paired accuracy changes from frozen evaluation to full45k LoRA adaptation. Each row compares the same model scale and task before and after LoRA adaptation. Red rings mark collapsed frozen runs; all adapted conditions remove collapse across three seeds.}
 \label{fig:main_results_plot}
 \end{figure}
 
@@ -186,12 +225,12 @@ The scale comparison is task-dependent. On MedMCQA and MedQA, 3B full45k is stro
 
 \section{Discussion}
 
-The central finding is not simply that full45k improves accuracy. Rather, task-driven self-update changes how small medical language models use the answer space. Frozen small models can behave like biased label predictors: they overuse a dominant label and produce low-entropy outputs. LoRA self-update reduces this behavior, improving macro-F1 and entropy while removing collapse flags.
+The central finding is not simply that full45k improves accuracy. Rather, task-driven LoRA adaptation changes how small medical language models use the answer space. Frozen small models can behave like biased label predictors: they overuse a dominant label and produce low-entropy outputs. LoRA adaptation reduces this behavior, improving macro-F1 and entropy while removing collapse flags.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/figure3_mechanism.pdf}
-\caption{Mechanism hypothesis. Frozen small medical language models can overuse a dominant answer label because of label-prior or format bias. Task-driven LoRA self-update exposes the model to multi-task QA evidence and recalibrates answer-space usage, reducing dominant-label behavior without claiming autonomous self-improvement.}
+\caption{Mechanism hypothesis. Frozen small medical language models can overuse a dominant answer label because of label-prior or format bias. Task-driven LoRA adaptation exposes the model to multi-task QA evidence and recalibrates answer-space usage, reducing dominant-label behavior without claiming autonomous self-improvement.}
 \label{fig:mechanism}
 \end{figure}
 
@@ -201,11 +240,11 @@ The results also qualify a common scaling intuition. Larger models help substant
 
 \section{Limitations}
 
-First, PubMedQA test100 is small, so its accuracy estimates have high uncertainty. We address this partly with three seeds and paired tests, but larger evaluation would strengthen the claim. Second, the study focuses on benchmark QA rather than real clinical deployment; results should not be interpreted as clinical safety evidence. Third, we evaluate LoRA self-update but do not compare against alternative adaptation methods such as full fine-tuning, prompt-only calibration, retrieval augmentation, or class-balanced replay. Fourth, the full45k mixture is fixed; task mixture ratios may affect PubMedQA uncertainty labels, especially maybe. Finally, the work studies final-answer prediction, not explanation quality, factual grounding, or harm avoidance.
+First, PubMedQA test100 is small, so its accuracy estimates have high uncertainty. We address this partly with three seeds and paired tests, but larger evaluation would strengthen the claim. Second, the study focuses on benchmark QA rather than real clinical deployment; results should not be interpreted as clinical safety evidence. Third, this version emphasizes LoRA adaptation against frozen, label-only, and prompt-format baselines; broader adaptation alternatives such as full fine-tuning and retrieval augmentation remain outside the main matrix. Fourth, task mixture ratios and class-balanced sampling may affect PubMedQA uncertainty labels, especially maybe; we therefore release an ablation matrix covering replay ratios, removal of PubMedQA resampling, single-task versus multi-task training, prompt-only formatting, and class-balanced weighting. Finally, the work studies final-answer prediction, not explanation quality, factual grounding, or harm avoidance.
 
 \section{Conclusion}
 
-We presented a collapse-aware study of task-driven self-update for resource-limited medical language models. Across Qwen2.5-Instruct 0.5B, 1.5B, and 3B models, LoRA adaptation on a 44,978-example multi-task replay mixture removed answer collapse across PubMedQA, MedMCQA, and MedQA. The strongest multiple-choice results came from 3B with very low variance, while PubMedQA favored 1.5B, showing that scale and task format interact. These results support collapse-aware evaluation as a necessary complement to accuracy when studying small medical language models.
+We presented a collapse-aware study of task-driven LoRA adaptation for resource-limited medical language models. Across Qwen2.5-Instruct 0.5B, 1.5B, and 3B models, LoRA adaptation on a 44,978-example multi-task replay mixture removed answer collapse across PubMedQA, MedMCQA, and MedQA. The strongest multiple-choice results came from 3B with very low variance, while PubMedQA favored 1.5B, showing that scale and task format interact. These results support collapse-aware evaluation as a necessary complement to accuracy when studying small medical language models.
 
 \section*{Declarations}
 
@@ -222,7 +261,7 @@ Not applicable. This study used publicly available benchmark datasets and did no
 Not applicable.
 
 \paragraph{Availability of data and materials.}
-PubMedQA, MedMCQA, MedQA, and Qwen2.5-Instruct are publicly available from their original providers. The analysis scripts, aggregate result tables, reproducibility instructions, and manuscript source files are prepared for public release in a GitHub repository: \url{https://github.com/123hzq321/collapse-aware-medical-self-update}.
+PubMedQA, MedMCQA, MedQA, and Qwen2.5-Instruct are publicly available from their original providers. The analysis scripts, aggregate result tables, per-seed tables, paired-test $p$-values, raw prediction files, exact prompts, reproducibility instructions, and manuscript source files are prepared for public release in a GitHub repository: \url{https://github.com/123hzq321/collapse-aware-medical-lora-adaptation}.
 
 \paragraph{Authors' contributions.}
 Z.H. conceived the study, designed the computational experiments, processed the data, implemented the analysis pipeline, performed model training and evaluation, prepared figures and tables, and drafted the manuscript. X.B. supervised the study, contributed clinical interpretation, and revised the manuscript. Both authors reviewed and approved the final manuscript.
@@ -240,6 +279,117 @@ The authors used AI-assisted language and coding tools during manuscript draftin
 
 \section{Reproducibility Details}
 
-All full45k self-update runs used one epoch, learning rate $2\times10^{-4}$, LoRA rank 8, alpha 16, dropout 0.05, and seeds 42, 43, and 44. The 0.5B and 1.5B runs used 5,623 optimizer steps; the 3B runs used 2,812 optimizer steps. The benchmarker outputs accuracy, macro-F1, dominant-label rate, normalized entropy, collapse flags, prediction counts, label baselines, grouped aggregates, and paired McNemar tests.
+All full45k LoRA adaptation runs used one epoch, learning rate $2\times10^{-4}$, LoRA rank 8, alpha 16, dropout 0.05, and seeds 42, 43, and 44. The 0.5B and 1.5B runs used 5,623 optimizer steps; the 3B runs used 2,812 optimizer steps. The benchmarker outputs accuracy, macro-F1, per-class precision/recall/F1, dominant-label rate, normalized entropy, collapse flags, prediction counts, confusion matrices, label baselines, grouped aggregates, and paired McNemar tests.
+
+\section{Detailed Per-Class Diagnostics}
+
+Table~\ref{tab:per_class_representative} reports representative per-class diagnostics for the strongest full45k condition on each task: 1.5B for PubMedQA and 3B for MedMCQA/MedQA. Values are means over three seeds. Full per-class tables for every model, task, condition, and seed are released as \path{results/per_class_metrics_current.csv} and \path{results/per_class_metrics_aggregate_current.csv}.
+
+\begin{table}[h]
+\centering
+\scriptsize
+\caption{Representative per-class recall and F1 after full45k LoRA adaptation.}
+\label{tab:per_class_representative}
+\begin{tabular}{lllcccc}
+\toprule
+Task & Model & Label & Support & Pred. count & Recall & F1 \\
+\midrule
+PubMedQA & 1.5B & yes & 56 & 54.3 & 0.768 & 0.779 \\
+PubMedQA & 1.5B & no & 34 & 28.7 & 0.657 & 0.713 \\
+PubMedQA & 1.5B & maybe & 10 & 17.0 & 0.367 & 0.261 \\
+MedMCQA & 3B & A & 323 & 351.0 & 0.665 & 0.637 \\
+MedMCQA & 3B & B & 267 & 276.0 & 0.559 & 0.550 \\
+MedMCQA & 3B & C & 219 & 199.3 & 0.553 & 0.579 \\
+MedMCQA & 3B & D & 191 & 173.7 & 0.515 & 0.539 \\
+MedQA & 3B & A & 353 & 332.7 & 0.574 & 0.591 \\
+MedQA & 3B & B & 309 & 352.7 & 0.591 & 0.552 \\
+MedQA & 3B & C & 346 & 327.7 & 0.581 & 0.597 \\
+MedQA & 3B & D & 265 & 260.0 & 0.504 & 0.509 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:confusion_representative} gives representative confusion matrices for the same task-level best conditions. Full confusion matrices and prediction counts for all seeds are released in \path{results/confusion_matrices_current.csv} and \path{results/prediction_counts_current.csv}.
+
+\begin{table}[h]
+\centering
+\scriptsize
+\caption{Representative confusion matrices. Rows are gold labels and columns are predicted labels. PubMedQA uses 1.5B seed 43; MedMCQA and MedQA use 3B seed 44.}
+\label{tab:confusion_representative}
+\begin{tabular}{llrrrr}
+\toprule
+Task & Gold & Pred. 1 & Pred. 2 & Pred. 3 & Pred. 4 \\
+\midrule
+PubMedQA & yes & 41 yes & 3 no & 12 maybe & \\
+PubMedQA & no & 7 yes & 23 no & 4 maybe & \\
+PubMedQA & maybe & 2 yes & 2 no & 6 maybe & \\
+MedMCQA & A & 219 A & 53 B & 28 C & 23 D \\
+MedMCQA & B & 64 A & 151 B & 24 C & 28 D \\
+MedMCQA & C & 37 A & 38 B & 120 C & 24 D \\
+MedMCQA & D & 39 A & 36 B & 20 C & 96 D \\
+MedQA & A & 199 A & 65 B & 48 C & 41 D \\
+MedQA & B & 42 A & 187 B & 39 C & 41 D \\
+MedQA & C & 48 A & 60 B & 204 C & 34 D \\
+MedQA & D & 40 A & 51 B & 41 C & 133 D \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Ablation Matrix}
+
+The repository includes a command-level ablation matrix for conditions that test whether the main result depends on the replay mixture rather than LoRA adaptation alone: PubMedQA replay ratios $1\times/3\times/6\times$, removal of PubMedQA resampling, single-task versus multi-task LoRA adaptation, prompt-only/format-constrained frozen baselines, and class-balanced sampling or sample-weighted replay. These ablations are separated from the main claims unless their full three-seed results are present in the public results directory.
+
+\section{Exact Prompt Templates}
+\label{app:prompts}
+
+The PubMedQA system message is:
+\begin{lstlisting}
+You are a biomedical QA classifier. Return only yes, no, or maybe.
+\end{lstlisting}
+
+The default PubMedQA user template is:
+\begin{lstlisting}
+Answer the biomedical research question using only the provided context.
+
+Label meanings:
+- yes: the context supports an affirmative answer.
+- no: the context supports a negative answer.
+- maybe: the context is explicitly inconclusive, mixed, or insufficient.
+
+Do not choose maybe just because the topic is medical. Choose the best label supported by the abstract.
+
+Question:
+{question}
+
+Context:
+{context}
+
+Return exactly one label: yes, no, or maybe.
+Answer:
+\end{lstlisting}
+
+The MedMCQA/MedQA system message is:
+\begin{lstlisting}
+You are a medical multiple-choice QA classifier. Return only A, B, C, or D.
+\end{lstlisting}
+
+The multiple-choice user template is:
+\begin{lstlisting}
+Answer the medical multiple-choice question.
+
+Choose exactly one option: A, B, C, or D.
+
+Question:
+{question}
+
+Options:
+A. {choice_A}
+B. {choice_B}
+C. {choice_C}
+D. {choice_D}
+
+Return exactly one letter: A, B, C, or D.
+Answer:
+\end{lstlisting}
 
 \end{document}

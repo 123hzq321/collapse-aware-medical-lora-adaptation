@@ -20,6 +20,6 @@ pdflatex main.tex
 
 Current framing:
 
-> Collapse-aware evaluation of task-driven LoRA self-update for resource-limited medical language models.
+> Collapse-aware evaluation of task-driven LoRA adaptation for resource-limited medical language models.
 
-The paper intentionally avoids claiming autonomous self-improvement. It defines self-update operationally as lightweight task-driven weight adaptation and centers the contribution on answer-collapse diagnosis and mitigation.
+The paper intentionally avoids claiming autonomous self-improvement. It defines the method as lightweight supervised LoRA adaptation and centers the contribution on answer-collapse diagnosis and mitigation.

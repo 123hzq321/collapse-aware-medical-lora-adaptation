@@ -1,0 +1,7 @@
+comparison,task,train_file,eval_file,train_n,eval_n,train_duplicate_id_n,eval_duplicate_id_n,train_duplicate_question_n,eval_duplicate_question_n,exact_id_overlap_n,exact_question_overlap_n,example_id_overlap,example_question_overlap,note
+pubmedqa_train_vs_test,pubmedqa,data/pubmedqa/splits/train.jsonl,data/pubmedqa/splits/test.jsonl,800,100,0,0,0,0,0,0,,,Original PubMedQA train/test files.
+medmcqa_train30k_vs_val1000,medmcqa,data/medmcqa/train_30000_seed42.jsonl,data/medmcqa/validation_1000_seed42.jsonl,30000,1000,0,0,1,0,0,0,,,MedMCQA train subset versus validation subset.
+medqa_train_vs_test,medqa,data/medqa/train_full_seed42.jsonl,data/medqa/test_full_seed42.jsonl,10178,1273,0,0,2,0,0,0,,,MedQA train/test files.
+full45k_vs_pubmedqa_test,pubmedqa,data/multitask/sft_pubmedqa_x6_medmcqa30k_medqa10k_seed42.jsonl,data/pubmedqa/splits/test.jsonl,4800,100,4000,0,4000,0,0,0,,,Full45k mixture versus PubMedQA test. Train duplicates include intentional PubMedQA replay.
+full45k_vs_medmcqa_val1000,medmcqa,data/multitask/sft_pubmedqa_x6_medmcqa30k_medqa10k_seed42.jsonl,data/medmcqa/validation_1000_seed42.jsonl,30000,1000,0,0,1,0,0,0,,,Full45k mixture versus MedMCQA validation.
+full45k_vs_medqa_test,medqa,data/multitask/sft_pubmedqa_x6_medmcqa30k_medqa10k_seed42.jsonl,data/medqa/test_full_seed42.jsonl,10178,1273,0,0,2,0,0,0,,,Full45k mixture versus MedQA test.

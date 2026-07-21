@@ -53,19 +53,33 @@ Run the CAW comparison:
 .\.venv\Scripts\python scripts\run_full_matrix.py --models qwen05b qwen15b qwen3b --seeds 42 43 44 --train-file data\multitask\sft_pubmedqa_x6_medmcqa30k_medqa10k_seed42_caw_p05.jsonl --strategy-tag caw45k_p05 --use-sample-weights --skip-existing
 ```
 
-## 5. Aggregate Results
+## 5. Generate Detailed Diagnostics
 
-Use the benchmarker and aggregate scripts in `scripts/` to regenerate the tables under `results/`.
+Use the benchmarker and diagnostic scripts to regenerate the tables under `results/`.
 
 The manuscript reports:
 
 - accuracy
 - macro-F1
+- per-class recall/F1
+- confusion matrices
+- prediction counts
 - dominant-label rate
 - normalized prediction entropy
 - collapse flags
 - majority/uniform/prior baselines
 - paired McNemar tests
+- split/leakage audit
+
+```powershell
+$env:PYTHONPATH='src'
+.\.venv\Scripts\python scripts\benchmarker.py --root . --out-prefix runs\benchmarker_current
+.\.venv\Scripts\python scripts\paired_prediction_stats.py --root . --out runs\paired_stats_current.csv
+.\.venv\Scripts\python scripts\detailed_error_tables.py --root . --prediction-index runs\benchmarker_predictions_current.csv --out-dir runs
+.\.venv\Scripts\python scripts\data_split_audit.py --root . --out-prefix runs\data_split_audit_current
+```
+
+See `ABLATION_MATRIX.md` for replay-ratio, no-resampling, prompt-only/format, single-task, multi-task, and class-balanced ablation commands.
 
 ## Notes
 
@@ -75,6 +89,5 @@ The repository intentionally excludes:
 - model checkpoints
 - LoRA adapter weights
 - full downloaded benchmark datasets
-- per-example prediction JSONL files
 
-This keeps the public repository lightweight and avoids redistributing dataset contents.
+The repository includes raw prediction JSONL files for the main evaluation matrix so reported p-values and per-seed tables can be audited.

@@ -22,6 +22,7 @@ def main() -> int:
     parser.add_argument("--max-samples", type=int, default=20)
     parser.add_argument("--max-new-tokens", type=int, default=8)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--template-id", type=int, default=0)
     parser.add_argument("--adapter", default=None)
     parser.add_argument("--out", default="runs/pubmedqa_frozen_smoke.jsonl")
     args = parser.parse_args()
@@ -49,7 +50,7 @@ def main() -> int:
     with out_path.open("w", encoding="utf-8") as handle:
         for example in tqdm(eval_set, desc="pubmedqa frozen"):
             context = flatten_pubmedqa_context(example)
-            prompt = build_pubmedqa_prompt(tokenizer, example["question"], context)
+            prompt = build_pubmedqa_prompt(tokenizer, example["question"], context, args.template_id)
             pred, raw = predict_label(model, tokenizer, prompt, args.max_new_tokens)
             if pred is None:
                 parse_failures += 1

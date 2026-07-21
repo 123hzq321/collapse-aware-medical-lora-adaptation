@@ -358,7 +358,7 @@ def write_report(
     lines.extend(
         [
             "",
-            "## Best Current Self-Update Runs",
+            "## Best Current LoRA Adaptation Runs",
             "",
             "| task | model | condition | seeds/runs | accuracy | macro-F1 | dominant rate | entropy | collapse |",
             "|---|---|---|---:|---:|---:|---:|---:|---:|",

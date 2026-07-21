@@ -1,1 +1,1 @@
-"""Utilities for biomedical self-update experiments."""
+"""Utilities for biomedical LoRA adaptation experiments."""

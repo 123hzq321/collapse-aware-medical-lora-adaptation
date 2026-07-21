@@ -16,7 +16,7 @@ Scope: PubMedQA test100, MedMCQA val1000, and MedQA test1273. Metrics are accura
 | MedQA test1273 | uniform_random | expected |  |  | 0.2500 |  |
 | MedQA test1273 | label_prior_random | expected |  |  | 0.2530 |  |
 
-## Best Current Self-Update Runs
+## Best Current LoRA Adaptation Runs
 
 | task | model | condition | seeds/runs | accuracy | macro-F1 | dominant rate | entropy | collapse |
 |---|---|---|---:|---:|---:|---:|---:|---:|
