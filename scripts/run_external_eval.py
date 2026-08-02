@@ -146,6 +146,37 @@ def per_class_metrics(gold: list[str], pred: list[str], labels: list[str]) -> li
     return rows
 
 
+def confusion_rows(gold: list[str], pred: list[str], labels: list[str]) -> list[dict]:
+    pred_labels = labels + (["parse_failure"] if "parse_failure" in pred else [])
+    counts = Counter((gold_label, pred_label) for gold_label, pred_label in zip(gold, pred))
+    rows = []
+    for gold_label in labels:
+        for pred_label in pred_labels:
+            rows.append(
+                {
+                    "gold_label": gold_label,
+                    "pred_label": pred_label,
+                    "count": counts[(gold_label, pred_label)],
+                }
+            )
+    return rows
+
+
+def prediction_count_rows(gold: list[str], pred: list[str], labels: list[str]) -> list[dict]:
+    gold_counts = Counter(gold)
+    pred_counts = Counter(pred)
+    out_labels = labels + (["parse_failure"] if pred_counts["parse_failure"] else [])
+    return [
+        {
+            "label": label,
+            "gold_count": gold_counts[label],
+            "pred_count": pred_counts[label],
+            "pred_rate": pred_counts[label] / len(pred) if pred else 0.0,
+        }
+        for label in out_labels
+    ]
+
+
 def write_csv(rows: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not rows:
@@ -272,11 +303,17 @@ def main() -> int:
 
     per_class_path = out_path.with_suffix(".per_class.csv")
     write_csv(per_class_metrics(gold, pred, labels), per_class_path)
+    confusion_path = out_path.with_suffix(".confusion.csv")
+    write_csv(confusion_rows(gold, pred, labels), confusion_path)
+    prediction_counts_path = out_path.with_suffix(".prediction_counts.csv")
+    write_csv(prediction_count_rows(gold, pred, labels), prediction_counts_path)
 
     print(json.dumps(metrics, indent=2, ensure_ascii=False))
     print(f"wrote predictions: {out_path}")
     print(f"wrote metrics: {metrics_path}")
     print(f"wrote per-class metrics: {per_class_path}")
+    print(f"wrote confusion matrix: {confusion_path}")
+    print(f"wrote prediction counts: {prediction_counts_path}")
     return 0
 
 
