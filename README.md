@@ -22,11 +22,31 @@ The main full45k LoRA adaptation runs use a 44,978-example multi-task medical QA
 
 Across all tested model scales and tasks, full45k LoRA adaptation removed collapse in every seed and improved task performance. Scaling alone did not guarantee stable behavior: frozen 1.5B and 3B models still collapsed on PubMedQA.
 
+## External Generalization Extension
+
+The original PubMedQA test100 slice is useful for iteration but too small for broad generalization claims. This repository now includes an external benchmark manifest and a unified exporter/evaluator for a larger follow-up suite:
+
+- PubMedQA labeled all-example 5-fold evaluation.
+- MMLU medical and biomedical subsets: anatomy, clinical knowledge, college biology, college medicine, medical genetics, and professional medicine.
+- Optional BioASQ yes/no and MedNLI checks, subject to their official access terms.
+- BoolQ and GLUE RTE retention checks for nonmedical generalization.
+
+Generated local benchmark sizes in the working project:
+
+- PubMedQA full labeled pool: 1,000 rows plus five stratified test folds of 201/201/200/199/199 rows.
+- MMLU medical/biomedical test: 1,089 rows.
+- BoolQ validation: 3,270 rows.
+- GLUE RTE validation: 277 rows.
+
+See `EXTERNAL_BENCHMARKS.md`, `configs/external_benchmarks.yml`, `scripts/export_external_benchmarks.py`, and `scripts/run_external_eval.py`.
+
+Important: the PubMedQA full pool is for cross-validation. Do not report it as a clean test set for adapters trained on the original 800-row PubMedQA training split; train one adapter per fold and evaluate on the paired held-out fold.
+
 ## Repository Layout
 
 - `src/medself/`: project Python package.
 - `scripts/`: data export, training, evaluation, aggregation, and benchmarker scripts.
-- `configs/`: small configuration files.
+- `configs/`: small configuration files and benchmark manifests.
 - `results/`: aggregate result tables and paper-ready summaries.
 - `raw_predictions/`: per-example prediction JSONL files for the main frozen and full45k runs.
 - `paper/`: manuscript source files.
@@ -34,6 +54,7 @@ Across all tested model scales and tasks, full45k LoRA adaptation removed collap
 - `requirements-torch-cu128.txt`: CUDA 12.8 PyTorch install notes for the local GPU setting.
 - `REPRODUCING.md`: step-by-step reproduction instructions.
 - `ABLATION_MATRIX.md`: command-level ablation matrix for replay ratios, no-resampling, prompt-only, single-task, multi-task, and class-balanced conditions.
+- `EXTERNAL_BENCHMARKS.md`: external generalization benchmark extension.
 
 ## Data
 
@@ -42,7 +63,12 @@ This repository does not include full benchmark datasets, downloaded model weigh
 - PubMedQA
 - MedMCQA
 - MedQA-USMLE
+- MMLU
+- BoolQ
+- GLUE RTE
 - Qwen2.5-Instruct
+
+BioASQ and MedNLI are listed as optional external validation sets because their raw data should be obtained through their official access routes.
 
 ## Clinical Use
 

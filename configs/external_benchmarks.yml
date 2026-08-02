@@ -1,0 +1,77 @@
+benchmarks:
+  - id: pubmedqa_labeled_5fold
+    domain: biomedical_qa
+    task_type: yes_no_maybe
+    status: ready
+    source_dataset: qiaojin/PubMedQA
+    source_config: pqa_labeled
+    labels: [yes, no, maybe]
+    official_url: https://pubmedqa.github.io/
+    access_note: Public Hugging Face mirror of the labeled PubMedQA split.
+    role_in_study: Replace the small PubMedQA test100 check with all labeled examples and 5-fold evaluation.
+    export_command: >-
+      python scripts/export_external_benchmarks.py --tasks pubmedqa_5fold
+
+  - id: mmlu_medical
+    domain: medical_exam_generalization
+    task_type: mcq4
+    status: ready_if_huggingface_available
+    source_dataset: cais/mmlu
+    source_configs:
+      - anatomy
+      - clinical_knowledge
+      - college_biology
+      - college_medicine
+      - medical_genetics
+      - professional_medicine
+    labels: [A, B, C, D]
+    official_url: https://huggingface.co/datasets/cais/mmlu
+    access_note: Public benchmark; examples are exported into the same A/B/C/D schema used by MedQA and MedMCQA.
+    role_in_study: Test whether task-driven LoRA adaptation transfers across medical exam subdomains beyond the training mixture.
+    export_command: >-
+      python scripts/export_external_benchmarks.py --tasks mmlu_medical
+
+  - id: bioasq_yesno
+    domain: biomedical_qa
+    task_type: yes_no
+    status: manual_download
+    source_dataset: BioASQ challenge yes/no QA
+    labels: [yes, no]
+    official_url: https://bioasq.org/
+    access_note: Use the official BioASQ task data package for the selected year; do not redistribute raw questions unless the license permits it.
+    role_in_study: Biomedical yes/no transfer check with a different annotation pipeline from PubMedQA.
+
+  - id: mednli
+    domain: clinical_nli
+    task_type: nli3
+    status: credentialed_access
+    source_dataset: MedNLI
+    labels: [entailment, contradiction, neutral]
+    official_url: https://physionet.org/content/mednli/1.0.0/
+    access_note: PhysioNet credentialing/data-use terms may be required; keep it as an optional external validation set.
+    role_in_study: Clinical-language reasoning check that is not answer-format-identical to PubMedQA or medical MCQ.
+
+  - id: boolq_validation
+    domain: nonmedical_qa
+    task_type: yes_no
+    status: ready_if_huggingface_available
+    source_dataset: google/boolq
+    labels: [yes, no]
+    official_url: https://github.com/google-research-datasets/boolean-questions
+    access_note: Public yes/no question answering benchmark.
+    role_in_study: Detect whether medical LoRA adaptation damages general yes/no behavior.
+    export_command: >-
+      python scripts/export_external_benchmarks.py --tasks boolq
+
+  - id: glue_rte_validation
+    domain: nonmedical_nli
+    task_type: nli2
+    status: ready_if_huggingface_available
+    source_dataset: nyu-mll/glue
+    source_config: rte
+    labels: [entailment, not_entailment]
+    official_url: https://gluebenchmark.com/tasks
+    access_note: Public GLUE RTE validation split.
+    role_in_study: Detect whether medical LoRA adaptation damages nonmedical textual entailment.
+    export_command: >-
+      python scripts/export_external_benchmarks.py --tasks rte
