@@ -8,6 +8,7 @@
 \usepackage{graphicx}
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage{hyperref}
+\hypersetup{hidelinks}
 \usepackage{listings}
 \lstset{basicstyle=\ttfamily\scriptsize,breaklines=true,columns=fullflexible}
 
@@ -240,7 +241,7 @@ The results also qualify a common scaling intuition. Larger models help substant
 
 \section{Limitations}
 
-First, PubMedQA test100 is small, so its accuracy estimates have high uncertainty. We address this partly with three seeds and paired tests, but larger evaluation would strengthen the claim. Second, the study focuses on benchmark QA rather than real clinical deployment; results should not be interpreted as clinical safety evidence. Third, this version emphasizes LoRA adaptation against frozen, label-only, and prompt-format baselines; broader adaptation alternatives such as full fine-tuning and retrieval augmentation remain outside the main matrix. Fourth, task mixture ratios and class-balanced sampling may affect PubMedQA uncertainty labels, especially maybe; we therefore release an ablation matrix covering replay ratios, removal of PubMedQA resampling, single-task versus multi-task training, prompt-only formatting, and class-balanced weighting. Finally, the work studies final-answer prediction, not explanation quality, factual grounding, or harm avoidance.
+First, PubMedQA test100 is small, so its accuracy estimates have high uncertainty. We address this partly with three seeds and paired tests, but larger evaluation would strengthen the claim. To support this follow-up, the public repository includes an external generalization protocol and scripts for PubMedQA five-fold evaluation, medical-domain transfer benchmarks, and nonmedical retention checks; these are provided as reproducibility extensions and are not counted as main results unless their raw prediction files are present. Second, the study focuses on benchmark QA rather than real clinical deployment; results should not be interpreted as clinical safety evidence. Third, this version emphasizes LoRA adaptation against frozen, label-only, and prompt-format baselines; broader adaptation alternatives such as full fine-tuning and retrieval augmentation remain outside the main matrix. Fourth, task mixture ratios and class-balanced sampling may affect PubMedQA uncertainty labels, especially maybe; we therefore release an ablation matrix covering replay ratios, removal of PubMedQA resampling, single-task versus multi-task training, prompt-only formatting, and class-balanced weighting. Finally, the work studies final-answer prediction, not explanation quality, factual grounding, or harm avoidance.
 
 \section{Conclusion}
 
@@ -261,7 +262,7 @@ Not applicable. This study used publicly available benchmark datasets and did no
 Not applicable.
 
 \paragraph{Availability of data and materials.}
-PubMedQA, MedMCQA, MedQA, and Qwen2.5-Instruct are publicly available from their original providers. The analysis scripts, aggregate result tables, per-seed tables, paired-test $p$-values, raw prediction files, exact prompts, reproducibility instructions, and manuscript source files are prepared for public release in a GitHub repository: \url{https://github.com/123hzq321/collapse-aware-medical-lora-adaptation}.
+PubMedQA, MedMCQA, MedQA, and Qwen2.5-Instruct are publicly available from their original providers. The analysis scripts, aggregate result tables, per-seed tables, paired-test $p$-values, raw prediction files, exact prompts, reproducibility instructions, external generalization benchmark scripts, and manuscript source files are publicly available in a \href{https://github.com/123hzq321/collapse-aware-medical-lora-adaptation}{public GitHub repository}. A \href{https://github.com/123hzq321/collapse-aware-medical-lora-adaptation/releases/tag/v0.2-external-benchmarks}{release archive} is also available.
 
 \paragraph{Authors' contributions.}
 Z.H. conceived the study, designed the computational experiments, processed the data, implemented the analysis pipeline, performed model training and evaluation, prepared figures and tables, and drafted the manuscript. X.B. supervised the study, contributed clinical interpretation, and revised the manuscript. Both authors reviewed and approved the final manuscript.
@@ -309,7 +310,7 @@ MedQA & 3B & D & 265 & 260.0 & 0.504 & 0.509 \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:confusion_representative} gives representative confusion matrices for the same task-level best conditions. Full confusion matrices and prediction counts for all seeds are released in \path{results/confusion_matrices_current.csv} and \path{results/prediction_counts_current.csv}.
+Table~\ref{tab:confusion_representative} gives representative confusion matrices for the same task-level best conditions. Full confusion matrices and prediction counts for all seeds are released in the public results directory.
 
 \begin{table}[h]
 \centering
